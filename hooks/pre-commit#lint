@@ -1,0 +1,90 @@
+#!/bin/sh
+#
+# Author: fuminchao - <fuminchao@outlook.com>
+#
+
+txtred='\e[0;31m' # Red
+txtgrn='\e[0;32m' # Green
+txtylw='\e[0;33m' # Yellow
+txtrst='\e[0m'    # Text Reset
+
+CUR_DIR=`pwd`
+CCK_RET=0
+CCK_MSG=()
+
+#
+# Customize Your Checker
+# $1 - filename with its path related to repository root
+# stdin - contents in stage
+#
+js_checker()
+{
+    filename=`basename $1`
+    tmpname=00000$RANDOM
+    tmpname=`dirname $1`/$filename.$(date +%Y%m%d%H%M%S).${tmpname: -5}.js
+    cat > $tmpname  #dump staged content into temporary file
+
+    jshint_output=`jshint $tmpname`
+    jshint_ret=$?
+
+    rm -rf $tmpname
+    echo "$jshint_output" | sed -e "s:$tmpname:$filename:g"
+
+    return $jshint_ret
+}
+
+txt_checker()
+{
+    return 0
+}
+# ENDOF - Customize Your Checker
+
+
+launch_checker_fn()
+{
+$1 $2 <<EOF
+`git show :$2`
+EOF
+}
+
+while read file
+do
+    case $file in
+    A* | M*)    #check new/modified files only
+
+        echo  #newline
+
+        filename=${file:3};
+        ext=`echo ${filename##*\.} | tr '[:upper:]' '[:lower:]'`;  #extension lowercase
+
+        checker_fn=${ext}_checker;
+
+        if [ "`type -t $checker_fn`" == "function" ]; then
+            echo -e "Checking ${txtylw}$filename${txtrst}" 
+
+            launch_checker_fn $checker_fn $filename
+
+            if [ $? -ne 0 ]; then
+                CCK_RET=201;
+                CCK_MSG+=("\n\t${txtred}F $filename${txtrst}")
+            else
+                CCK_MSG+=("\n\t${txtgrn}P $filename${txtrst}")
+            fi
+        else
+            echo -e "Skipped ${txtylw}$filename${txtrst} | No checker for filetype .$ext"
+        fi
+    ;;
+    esac
+done << EOF
+`git status --porcelain`
+EOF
+
+echo  #newline
+if [ $CCK_RET -ne 0 ]; then
+    echo -e "Current commit was rejected by the failure of pre-commit validation.\nPlease fix them and re-stage the changes prior to next commit."
+    echo -e ${CCK_MSG[*]}
+    exit $CCK_RET
+else
+    echo -e "All pre-commit validations are passed.\nProceed to commit..."
+    echo -e ${CCK_MSG[*]}
+fi
