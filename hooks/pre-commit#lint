@@ -47,9 +47,10 @@ $1 $2 <<EOF
 EOF
 }
 
-while read file
+while read -r
 do
-    case $file in
+    file="$REPLY"
+    case "$file" in
     A* | M*)    #check new/modified files only
 
         echo  #newline
