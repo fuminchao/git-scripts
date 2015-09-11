@@ -10,7 +10,11 @@ txtrst='\e[0m'    # Text Reset
 
 CUR_DIR=`pwd`
 CCK_RET=0
-CCK_MSG=()
+CCK_MSG=""
+CCK_PASS=()
+CCK_FAIL=()
+
+ECHO_CMD=printf # echo program colorful no newline!!
 
 #
 # Customize Your Checker
@@ -19,9 +23,9 @@ CCK_MSG=()
 #
 js_checker()
 {
-    filename=`basename $1`
+    xfilename=`basename $1`
     tmpname=00000$RANDOM
-    tmpname=`dirname $1`/$filename.$(date +%Y%m%d%H%M%S).${tmpname: -5}.js
+    tmpname=`dirname $1`/$xfilename.$(date +%Y%m%d%H%M%S).${tmpname: -5}.js
     cat > $tmpname  #dump staged content into temporary file
 
     jshint_output=`jshint $tmpname`
@@ -31,6 +35,22 @@ js_checker()
     echo "$jshint_output" | sed -e "s:$tmpname:$filename:g"
 
     return $jshint_ret
+}
+
+ts_checker()
+{
+  xfilename=`basename $1`
+  tmpname=00000$RANDOM
+  tmpname=`dirname $1`/$xfilename.$(date +%Y%m%d%H%M%S).${tmpname: -5}.ts
+  cat > $tmpname  #dump staged content into temporary file
+
+  tslint_output=`tslint $tmpname`
+  tslint_ret=$?
+
+  rm -rf $tmpname
+  echo "$tslint_output" | sed -e "s:$tmpname:$filename:g"
+
+  return $tslint_ret
 }
 
 txt_checker()
@@ -61,18 +81,17 @@ do
         checker_fn=${ext}_checker;
 
         if [ "`type -t $checker_fn`" == "function" ]; then
-            echo -e "Checking ${txtylw}$filename${txtrst}" 
-
+            $ECHO_CMD "${txtylw}$filename${txtrst} checking...\n"
             launch_checker_fn $checker_fn $filename
 
             if [ $? -ne 0 ]; then
                 CCK_RET=201;
-                CCK_MSG+=("\n\t${txtred}F $filename${txtrst}")
+                CCK_FAIL+=("$filename")
             else
-                CCK_MSG+=("\n\t${txtgrn}P $filename${txtrst}")
+                CCK_PASS+=("$filename")
             fi
         else
-            echo -e "Skipped ${txtylw}$filename${txtrst} | No checker for filetype .$ext"
+            $ECHO_CMD "Skipped ${txtylw}$filename${txtrst} | No checker for filetype .$ext\n"
         fi
     ;;
     esac
@@ -82,10 +101,21 @@ EOF
 
 echo  #newline
 if [ $CCK_RET -ne 0 ]; then
-    echo -e "Current commit was rejected by the failure of pre-commit validation.\nPlease fix them and re-stage the changes prior to next commit."
-    echo -e ${CCK_MSG[*]}
+    $ECHO_CMD "Current commit was rejected by the failure of pre-commit validation.\nPlease fix them and re-stage the changes prior to next commit.\n"
+
+    for f in $CCK_FAIL
+    do
+      $ECHO_CMD "  ${txtred}F %s${txtrst}" $f
+      echo  #newline
+    done
+    echo  #newline
     exit $CCK_RET
 else
-    echo -e "All pre-commit validations are passed.\nProceed to commit..."
-    echo -e ${CCK_MSG[*]}
+    echo "All pre-commit validations are passed.\nProceed to commit..."
+    for f in $CCK_PASS
+    do
+      $ECHO_CMD "  ${txtgrn}P %s${txtrst}" $f
+      echo  #newline
+    done
+    echo  #newline
 fi
