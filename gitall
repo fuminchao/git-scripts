@@ -1,0 +1,62 @@
+#!/bin/bash
+
+CMD_ARGS=$@
+
+REPO_DIR=()
+while read -r 
+do
+    if [ -e "$REPLY/.git" ]; then
+        REPO_DIR+=("$REPLY")
+    fi
+done << EOF
+`find . -maxdepth 5 -type d | sort -u`
+EOF
+REPO_DIR_CNT=${#REPO_DIR[@]}
+
+export COLOR_LIGHT_RED='\e[1;31m'
+export COLOR_LIGHT_GREEN='\e[1;32m'
+export COLOR_BLUE='\e[0;34m'
+export COLOR_LIGHT_BLUE='\e[1;34m'
+export COLOR_YELLOW='\e[1;33m'
+export COLOR_LIGHT_PURPLE='\e[1;35m'
+export COLOR_NC='\e[0m'
+
+PID_POOL=()
+PID_POOL_CAP=5
+for i in `seq ${REPO_DIR_CNT}`
+do
+    if [ ${#PID_POOL[@]} -ge $PID_POOL_CAP ]; then
+        wait ${PID_POOL[@]:0:1}
+        PID_POOL=("${PID_POOL[@]:1}")   # Shift
+    fi
+
+    (
+    cd ${REPO_DIR[i - 1]}
+
+    xi=0000000000$i
+    li=${#REPO_DIR_CNT}
+    xi=${xi:n-li}
+    STD_OUT="$(printf \
+        "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC\n" \
+        "$xi/${#REPO_DIR[@]}" \
+        "`pwd`" "<=>" \
+        "`git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2`" \
+        "(`git branch | grep -E "^\*" | cut -d ' ' -f2`)")"
+
+    STD_OUT="$STD_OUT\n"
+
+    STD_OUT="$STD_OUT`$CMD_ARGS`"
+
+    echo -e "$STD_OUT"
+    #sleep `expr $RANDOM % 10`
+    ) &
+
+    PID_POOL+=($!)
+done
+
+# Shift and wait all the rest jobs
+while [ ${#PID_POOL[@]} -gt 0 ];
+do
+    wait ${PID_POOL[@]:0:1}
+    PID_POOL=("${PID_POOL[@]:1}")   # Shift
+done
