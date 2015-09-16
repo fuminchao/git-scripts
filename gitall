@@ -1,7 +1,11 @@
 #!/bin/bash
 
+# GITALL_RECURSIVE_DEPTH
+# GITALL_CONCURRENT
+
 CMD_ARGS=$@
 
+[ -z "$GITALL_RECURSIVE_DEPTH" ] && GITALL_RECURSIVE_DEPTH=10
 REPO_DIR=()
 while read -r
 do
@@ -9,17 +13,23 @@ do
         REPO_DIR+=("$REPLY")
     fi
 done << EOF
-`find . -maxdepth 10 -type d | sort -u`
+`find . -maxdepth $GITALL_RECURSIVE_DEPTH -type d | sort -u`
 EOF
 REPO_DIR_CNT=${#REPO_DIR[@]}
 
-SEQ_FILE=~/`basename $0`.$$.$RANDOM
+
+# create seqfile in TMPDIR
+# trap TERMINATE to cleanup
+[ -z "$TMPDIR" ] && TMPDIR=/tmp
+SEQ_FILE=$TMPDIR/`basename $0`.$$.$RANDOM
+echo > $SEQ_FILE
 cleanup()
 {
     rm -rf $SEQ_FILE
     exit 0
 }
 trap cleanup SIGKILL SIGINT SIGTERM
+
 
 export COLOR_LIGHT_RED='\e[1;31m'
 export COLOR_LIGHT_GREEN='\e[1;32m'
@@ -30,11 +40,10 @@ export COLOR_LIGHT_PURPLE='\e[1;35m'
 export COLOR_NC='\e[0m'
 
 PID_POOL=()
-PID_POOL_CAP=5
-echo > $SEQ_FILE
+[ -z "$GITALL_CONCURRENT" ] && GITALL_CONCURRENT=5
 for i in `seq ${REPO_DIR_CNT}`
 do
-    if [ ${#PID_POOL[@]} -ge $PID_POOL_CAP ]; then
+    if [ ${#PID_POOL[@]} -ge $GITALL_CONCURRENT ]; then
         wait ${PID_POOL[@]:0:1}
         PID_POOL=("${PID_POOL[@]:1}")   # Shift
     fi
