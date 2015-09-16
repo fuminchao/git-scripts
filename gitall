@@ -16,7 +16,7 @@ REPO_DIR_CNT=${#REPO_DIR[@]}
 SEQ_FILE=~/`basename $0`.$$.$RANDOM
 cleanup()
 {
-    echo rm -rf $SEQ_FILE
+    rm -rf $SEQ_FILE
     exit 0
 }
 trap cleanup SIGKILL SIGINT SIGTERM
@@ -57,7 +57,7 @@ do
     STD_OUT="$STD_OUT\n"
     STD_OUT="$STD_OUT`$CMD_ARGS`\n"
 
-    while [ "`cat $SEQ_FILE | wc -l | tr -d\ `" -lt "$i" ]; do echo cat $SEQ_FILE | wc -l | tr -d\ ; done
+    while [ "`cat $SEQ_FILE | wc -l | tr -d ' '`" -lt "$i" ]; do true; done
 
     echo -en "$STD_OUT"
     echo >> $SEQ_FILE
