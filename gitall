@@ -2,6 +2,7 @@
 
 # GITALL_RECURSIVE_DEPTH
 # GITALL_CONCURRENT
+# GITALL_NO_COLOR
 
 CMD_ARGS=$@
 
@@ -38,14 +39,16 @@ cleanup()
 }
 trap cleanup SIGKILL SIGINT SIGTERM
 
-
-export COLOR_LIGHT_RED='\e[1;31m'
-export COLOR_LIGHT_GREEN='\e[1;32m'
-export COLOR_BLUE='\e[0;34m'
-export COLOR_LIGHT_BLUE='\e[1;34m'
-export COLOR_YELLOW='\e[1;33m'
-export COLOR_LIGHT_PURPLE='\e[1;35m'
-export COLOR_NC='\e[0m'
+# Useful for piped stdout
+if [ ! "$GITALL_NO_COLOR" = "Y" ]; then
+    export COLOR_LIGHT_RED='\e[1;31m'
+    export COLOR_LIGHT_GREEN='\e[1;32m'
+    export COLOR_BLUE='\e[0;34m'
+    export COLOR_LIGHT_BLUE='\e[1;34m'
+    export COLOR_YELLOW='\e[1;33m'
+    export COLOR_LIGHT_PURPLE='\e[1;35m'
+    export COLOR_NC='\e[0m'
+fi
 
 [ -z "$GITALL_CONCURRENT" ] && GITALL_CONCURRENT=5
 for i in `seq ${REPO_DIR_CNT}`
@@ -78,7 +81,7 @@ do
     while [ "`cat $SEQ_FILE | wc -l | tr -d ' '`" -lt "$i" ]; do true; done
 
     echo -en "$STD_OUT"
-    echo >> $SEQ_FILE
+    echo >> $SEQ_FILE   # seqfile increment
     exit 0
     ) &
 
