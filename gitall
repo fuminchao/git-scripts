@@ -46,16 +46,18 @@ do
     li=${#REPO_DIR_CNT}
     xi=${xi:n-li}
     STD_OUT="$(printf \
-        "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC\n" \
+        "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC" \
         "$xi/${#REPO_DIR[@]}" \
         "`pwd`" "<=>" \
         "`git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2`" \
-        "(`git branch | grep -E "^\*" | cut -d ' ' -f2`)")"
+        "(`git branch | grep -E "^\*" | cut -d ' ' -f2`)")\n"
 
     #sleep `expr $RANDOM % 3`
 
-    STD_OUT="$STD_OUT\n"
-    STD_OUT="$STD_OUT`$CMD_ARGS`\n"
+    CMD_OUT=`$CMD_ARGS`
+    if [ ! -z "$CMD_OUT" ]; then
+        STD_OUT="$STD_OUT`$CMD_ARGS`\n"
+    fi
 
     while [ "`cat $SEQ_FILE | wc -l | tr -d ' '`" -lt "$i" ]; do true; done
 
