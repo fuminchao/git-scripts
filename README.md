@@ -1,2 +1,3 @@
 # git-scripts
-Git scripts written and used by myself
+* **gitall** - iterate all local git repositories under working folder, run argument as command on every one of them.
+
