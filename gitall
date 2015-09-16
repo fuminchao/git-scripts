@@ -3,7 +3,7 @@
 CMD_ARGS=$@
 
 REPO_DIR=()
-while read -r 
+while read -r
 do
     if [ -e "$REPLY/.git" ]; then
         REPO_DIR+=("$REPLY")
@@ -16,7 +16,7 @@ REPO_DIR_CNT=${#REPO_DIR[@]}
 SEQ_FILE=~/`basename $0`.$$.$RANDOM
 cleanup()
 {
-    rm -rf $SEQ_FILE
+    echo rm -rf $SEQ_FILE
     exit 0
 }
 trap cleanup SIGKILL SIGINT SIGTERM
@@ -31,7 +31,7 @@ export COLOR_NC='\e[0m'
 
 PID_POOL=()
 PID_POOL_CAP=5
-echo 1 > $SEQ_FILE
+echo > $SEQ_FILE
 for i in `seq ${REPO_DIR_CNT}`
 do
     if [ ${#PID_POOL[@]} -ge $PID_POOL_CAP ]; then
@@ -57,13 +57,13 @@ do
     STD_OUT="$STD_OUT\n"
     STD_OUT="$STD_OUT`$CMD_ARGS`\n"
 
-    while [ "`tail -1 $SEQ_FILE`" -lt "$i" ]; do true; done
+    while [ "`cat $SEQ_FILE | wc -l | tr -d\ `" -lt "$i" ]; do echo cat $SEQ_FILE | wc -l | tr -d\ ; done
 
     echo -en "$STD_OUT"
-    echo $(expr `tail -1 $SEQ_FILE` + 1) >> $SEQ_FILE
+    echo >> $SEQ_FILE
     ) &
 
-    PID_POOL+=($!)
+    PID_POOL+=($!)  # PID for waiting
 done
 
 # Shift and wait all the rest jobs
