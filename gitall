@@ -50,7 +50,7 @@ do
         "$xi/${#REPO_DIR[@]}" \
         "`pwd`" "<=>" \
         "`git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2`" \
-        "(`git branch | grep -E "^\*" | cut -d ' ' -f2`)")\n"
+        "`git branch | grep -E "^\*" | cut -d ' ' -f2`")\n"
 
     #sleep `expr $RANDOM % 3`
 
