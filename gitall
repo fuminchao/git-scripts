@@ -6,6 +6,11 @@
 
 CMD_ARGS=$@
 
+# turn off color for stdout redirect
+if [ ! -t 1 ] ; then
+    GITALL_NO_COLOR=Y
+fi
+
 REPO_DIR=()
 RUNNING_PID=()
 
