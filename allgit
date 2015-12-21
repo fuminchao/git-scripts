@@ -1,0 +1,103 @@
+#!/bin/bash
+
+# GITALL_RECURSIVE_DEPTH
+# GITALL_CONCURRENT
+# GITALL_NO_COLOR
+
+CMD_ARGS=$@
+
+# turn off color for stdout redirect
+if [ ! -t 1 ] ; then
+    GITALL_NO_COLOR=Y
+fi
+
+REPO_DIR=()
+RUNNING_PID=()
+
+[ -z "$GITALL_RECURSIVE_DEPTH" ] && GITALL_RECURSIVE_DEPTH=10
+while read -r
+do
+    if [ -e "$REPLY/.git" ]; then
+        REPO_DIR+=("$REPLY")
+    fi
+done << EOF
+`find . -maxdepth $GITALL_RECURSIVE_DEPTH -type d | sort -u`
+EOF
+REPO_DIR_CNT=${#REPO_DIR[@]}
+
+
+# create seqfile in TMPDIR
+# trap TERMINATE to cleanup
+[ -z "$TMPDIR" ] && TMPDIR=/tmp
+SEQ_FILE=$TMPDIR/`basename $0`.$$.$RANDOM
+echo > $SEQ_FILE
+cleanup()
+{
+    while [ ${#RUNNING_PID[@]} -gt 0 ];
+    do
+        kill -9 ${RUNNING_PID[@]:0:1}
+        RUNNING_PID=("${RUNNING_PID[@]:1}")   # Shift
+    done
+
+    rm -rf $SEQ_FILE
+    exit 0
+}
+trap cleanup SIGKILL SIGINT SIGTERM
+
+# Useful for piped stdout
+if [ ! "$GITALL_NO_COLOR" = "Y" ]; then
+    export COLOR_LIGHT_RED='\e[1;31m'
+    export COLOR_LIGHT_GREEN='\e[1;32m'
+    export COLOR_BLUE='\e[0;34m'
+    export COLOR_LIGHT_BLUE='\e[1;34m'
+    export COLOR_YELLOW='\e[1;33m'
+    export COLOR_LIGHT_PURPLE='\e[1;35m'
+    export COLOR_NC='\e[0m'
+fi
+
+[ -z "$GITALL_CONCURRENT" ] && GITALL_CONCURRENT=5
+for i in `seq ${REPO_DIR_CNT}`
+do
+    if [ ${#RUNNING_PID[@]} -ge $GITALL_CONCURRENT ]; then
+        wait ${RUNNING_PID[@]:0:1}
+        RUNNING_PID=("${RUNNING_PID[@]:1}")   # Shift
+    fi
+
+    (
+    cd ${REPO_DIR[i - 1]}
+
+    xi=0000000000$i
+    li=${#REPO_DIR_CNT}
+    xi=${xi:n-li}
+    STD_OUT="$(printf \
+        "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC" \
+        "$xi/${#REPO_DIR[@]}" \
+        "`pwd`" "<=>" \
+        "`git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2`" \
+        "`git branch | grep -E "^\*" | cut -d ' ' -f2`")\n"
+
+    #sleep `expr $RANDOM % 3`
+
+    CMD_OUT=`$CMD_ARGS`
+    if [ ! -z "$CMD_OUT" ]; then
+        STD_OUT="$STD_OUT`$CMD_ARGS`\n"
+    fi
+
+    while [ "`cat $SEQ_FILE | wc -l | tr -d ' '`" -lt "$i" ]; do true; done
+
+    echo -en "$STD_OUT"
+    echo >> $SEQ_FILE   # seqfile increment
+    exit 0
+    ) &
+
+    RUNNING_PID+=($!)  # PID for waiting
+done
+
+# Shift and wait all the rest jobs
+while [ ${#RUNNING_PID[@]} -gt 0 ];
+do
+    wait ${RUNNING_PID[@]:0:1}
+    RUNNING_PID=("${RUNNING_PID[@]:1}")   # Shift
+done
+
+cleanup
