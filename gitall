@@ -1,18 +1,24 @@
 #!/bin/bash
 
-CMD_ARGS=$@
-
 type parallel >> /dev/null
 if [ !"$?" = "0" ]; then
     echo "parallel ?"
     exit 1;
 fi
 
+if [ "$1" = "--" ]; then
+    shift
+else
+    set -- "git" $@
+fi
+
+CMD_ARGS=$@
+
 # GITALL_RECURSIVE_DEPTH
 # GITALL_CONCURRENT
 # GITALL_NO_COLOR
 
-[ -z "$GITALL_CONCURRENT" ] && GITALL_CONCURRENT=5
+[ -z "$GITALL_CONCURRENT" ] && GITALL_CONCURRENT=20
 [ -z "$GITALL_RECURSIVE_DEPTH" ] && GITALL_RECURSIVE_DEPTH=10
 [ ! -t 1 ] && GITALL_NO_COLOR=Y
 
