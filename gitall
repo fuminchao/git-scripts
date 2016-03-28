@@ -51,11 +51,9 @@ REPO_DIR=()
 while read -r
 do
     #echo $REPLY
-    if [ -e "$REPLY/.git" ]; then
-        REPO_DIR+=("$REPLY")
-    fi
+    REPO_DIR+=("$(dirname $REPLY)")
 done << EOF
-$(find . -maxdepth $GITALL_RECURSIVE_DEPTH ! \( -perm -g+r,u+r,o+r  -o  -path .git \) -prune -o  -type d | sort -u)
+$(find . -maxdepth $GITALL_RECURSIVE_DEPTH \( -type d -or -type l \) -name ".git" | sort -u)
 EOF
 
 function loopGit() {
