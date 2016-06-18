@@ -36,11 +36,14 @@ function printGit() {
     IDX=$(echo "$1"|cut -d\  -f1)
     DIR=$(echo "$1"|cut -d\  -f2)
 
+    REPO_BASE=$(pwd)
     cd "$DIR" || exit
+    cpwd=$(pwd)
+
     printf \
         "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC" \
         "$IDX" \
-        "$(pwd)" "<=>" \
+        "${cpwd:${#REPO_BASE}+1}" "<=>" \
         "$(git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2)" \
         "$(git symbolic-ref --short HEAD)"
     echo
