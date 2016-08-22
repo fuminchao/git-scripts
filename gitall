@@ -39,11 +39,14 @@ function printGit() {
     REPO_BASE=$(pwd)
     cd "$DIR" || exit
     cpwd=$(pwd)
+    cpwd=${cpwd:${#REPO_BASE}+1}
+
+    [ "$cpwd" = "" ] && cpwd='.'
 
     printf \
         "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC" \
         "$IDX" \
-        "${cpwd:${#REPO_BASE}+1}" "<=>" \
+        "${cpwd}" "<=>" \
         "$(git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2)" \
         "$(git symbolic-ref --short HEAD)"
     echo
