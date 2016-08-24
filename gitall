@@ -12,11 +12,12 @@ elif [ ! -z "$1" ]; then
     set -- "git" "$@"
 fi
 
-CMD_ARGS=$*
+export CMD_ARGS=$*
 
 # GITALL_RECURSIVE_DEPTH
 # GITALL_CONCURRENT
 # GITALL_NO_COLOR
+# GITALL_TRIM_NO_OUTPUT
 
 [ -z "$GITALL_CONCURRENT" ] && GITALL_CONCURRENT=20
 [ -z "$GITALL_RECURSIVE_DEPTH" ] && GITALL_RECURSIVE_DEPTH=10
@@ -32,7 +33,7 @@ if [ ! "$GITALL_NO_COLOR" = "Y" ]; then
     export COLOR_NC='\e[0m'
 fi
 
-function printGit() {
+function PrintExec() {
     IDX=$(echo "$1"|cut -d\  -f1)
     DIR=$(echo "$1"|cut -d\  -f2)
 
@@ -43,15 +44,21 @@ function printGit() {
 
     [ "$cpwd" = "" ] && cpwd='.'
 
+    CMD_OUTPUT=`$CMD_ARGS`
+
+    [ -z "$CMD_OUTPUT" -a "$GITALL_TRIM_NO_OUTPUT" = "y" ] && exit
+
     printf \
-        "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC" \
-        "$IDX" \
-        "${cpwd}" "<=>" \
-        "$(git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2)" \
-        "$(git symbolic-ref --short HEAD)"
+      "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC" \
+      "$IDX" \
+      "${cpwd}" "<=>" \
+      "$(git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2)" \
+      "$(git symbolic-ref --short HEAD)"
     echo
+
+    [ ! -z "$CMD_OUTPUT" ] && echo -e "$CMD_OUTPUT"
 }
-export -f printGit
+export -f PrintExec
 
 REPO_DIR=()
 while read -r
@@ -73,4 +80,4 @@ function loopGit() {
     done
 }
 
-loopGit | parallel -0 --no-notice -j${GITALL_CONCURRENT} --keep-order "printGit {}; $CMD_ARGS"
+loopGit | parallel -0 --no-notice -j${GITALL_CONCURRENT} --keep-order "PrintExec {};"
