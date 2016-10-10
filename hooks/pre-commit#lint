@@ -103,7 +103,7 @@ echo  #newline
 if [ $CCK_RET -ne 0 ]; then
     $ECHO_CMD "Current commit was rejected by the failure of pre-commit validation.\nPlease fix them and re-stage the changes prior to next commit.\n"
 
-    for f in $CCK_FAIL
+    for f in ${CCK_FAIL[@]}
     do
       $ECHO_CMD "  ${txtred}F %s${txtrst}" $f
       echo  #newline
