@@ -48,11 +48,13 @@ function PrintExec() {
 
     [ -z "$CMD_OUTPUT" -a "$GITALL_TRIM_NO_OUTPUT" = "y" ] && exit
 
+    REPO_CURRENT_REMOTE=$(git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD) | cut -d'/' -f1)
+
     printf \
       "$COLOR_LIGHT_PURPLE%s$COLOR_NC $COLOR_LIGHT_BLUE%s$COLOR_NC %s $COLOR_LIGHT_BLUE%s$COLOR_NC $COLOR_YELLOW%s$COLOR_NC" \
       "$IDX" \
       "${cpwd}" "<=>" \
-      "$(git remote --verbose | grep fetch | cut -d ' ' -f1 | cut -f2)" \
+      "$(git remote --verbose | grep -E "^${REPO_CURRENT_REMOTE}" | grep fetch | cut -d ' ' -f1 | cut -f2)" \
       "$(git symbolic-ref --short HEAD)"
     echo
 
