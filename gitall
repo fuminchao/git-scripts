@@ -65,15 +65,16 @@ export -f PrintExec
 REPO_DIR=()
 while read -r
 do
-    #echo $REPLY
-    REPO_DIR+=("$(dirname $REPLY)")
+    [ ! -z "$REPLY" ] && REPO_DIR+=("$(dirname $REPLY)")
 done << EOF
 $(find . -maxdepth $GITALL_RECURSIVE_DEPTH \( -type d -or -type l \) -name ".git" | sort -u)
 EOF
 
 function loopGit() {
     cnt=${#REPO_DIR[@]}
-    for i in $(seq ${#REPO_DIR[@]})
+    [ $cnt = 0 ] && return
+
+    for i in $(seq $cnt)
     do
         xi="0000000000$i"
         li=${#cnt}
@@ -83,3 +84,4 @@ function loopGit() {
 }
 
 loopGit | parallel -0 --no-notice -j${GITALL_CONCURRENT} --keep-order "PrintExec {};"
+
